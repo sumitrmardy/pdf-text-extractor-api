@@ -1,0 +1,41 @@
+{
+    "common": {
+        "credentialNote": "## 配置（仅需一次）\n\n**1. 获取 Apify Token** — __link.apifyTokenUrl__\n\n**2. 创建 n8n 凭据**\n凭据 → 新建 → **Header Auth**\n- 名称: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer 你的_APIFY_TOKEN`\n\n所有 HTTP 节点均已配置指向该凭据，工作流文件中不包含任何密钥。",
+        "costNote": "## 计费说明\n\n按事件付费：成功返回文本的 PDF 每份 $0.002（千份起价 __link.priceFromPer1k__）。损坏文件、404 与空文件免费。扫描件 OCR 页面每页 $0.005。\n\n当前价格详情：__link.actorPricingUrl__",
+        "actorNote": "Actor 页面：__link.actorUrl__\n模板与开源仓库：__link.repoUrl__"
+    },
+    "t1": {
+        "name": "从 Google Drive PDF 提取文本并写入 Google 表格 (PDF Text Extractor)",
+        "sticky": "# 提取 Google Drive 中的 PDF 到表格\n\n监控 Google Drive 文件夹中的新 PDF，调用 Apify PDF Text Extractor 提取文字并追加到 Google 表格。\n\n## 表格所需列\n`file_id` · `file_name` · `status` · `pages` · `characters` · `text` · `processed_at`\n\n__i18n.common.credentialNote__\n\n__i18n.common.costNote__\n\n__i18n.common.actorNote__\n\n## 共享设置（必需）\nActor 通过链接下载每个文件，因此 PDF 必须设置为**知道链接的任何人均可查看**。私有文件会返回失败行（`not_a_pdf` 或 `http_403`），不收费。",
+        "driveName": "读取 Drive 中的 PDF 文件",
+        "extractName": "提取 PDF 文本 (Apify)",
+        "formatName": "格式化表格行数据",
+        "sheetName": "追加至 Google 表格"
+    },
+    "t2": {
+        "name": "PDF 文档向量化入库 (带 RAG 切片与页码元数据)",
+        "sticky": "# PDF 向量入库工作流\n\n提取 PDF 并进行语义分块，保留精确的 `pageStart` 与 `pageEnd` 元数据，写入 Qdrant/Pinecone 向量数据库供 RAG 引用。\n\n__i18n.common.credentialNote__\n\n## 原生切片支持\nActor 支持传入 `chunkSize` 原生切片，保留真实的 PDF 页码边界，便于精准生成引用溯源。\n\n__i18n.common.costNote__\n\n__i18n.common.actorNote__",
+        "triggerName": "PDF URL 列表输入",
+        "extractName": "提取并分块 PDF (Apify)",
+        "prepareChunksName": "整理切片文档",
+        "vectorStoreName": "写入向量数据库"
+    },
+    "t3": {
+        "name": "PDF 转文本 Webhook 接口 (供应用与自动化集成)",
+        "sticky": "# PDF 转文本 Webhook 接口\n\n向此 Webhook POST `{ \"url\": \"https://example.com/doc.pdf\" }`，实时获取清洗后的文本、元数据与 OCR 指标。\n\n__i18n.common.credentialNote__\n\n__i18n.common.costNote__\n\n__i18n.common.actorNote__",
+        "webhookName": "PDF 接收 Webhook",
+        "extractName": "提取 PDF 文本 (Apify)",
+        "formatName": "格式化响应 JSON",
+        "respondName": "返回提取结果"
+    },
+    "t4": {
+        "name": "AI Agent 工具：阅读与检索 PDF 文档",
+        "sticky": "# 为 AI Agent 赋予阅读 PDF 的能力\n\n为 AI Agent 配置 PDF 阅读工具，能够总结论文、根据精确页码回答提问并智能识别扫描件。\n\n__i18n.common.credentialNote__\n\n## 提示词指引\n提示词详细说明了 `status`、`ocrPages` 与 `budget_incomplete` 的含义，确保 Agent 准确理解文档提取状态。\n\n__i18n.common.costNote__\n\n__i18n.common.actorNote__",
+        "chatTriggerName": "接收聊天消息时",
+        "agentName": "PDF 智能问答 Agent",
+        "toolName": "PDF 阅读工具",
+        "modelName": "对话模型",
+        "toolDescription": "从一个或多个 PDF URL 中提取全文、元数据、按页拆分和 OCR 结果。必须在 `urls` 数组中传递 URL。",
+        "systemPrompt": "你是一个能够检索并阅读 PDF 文件的研究助手。当用户提供 PDF 链接时，调用 PDF 阅读工具获取其内容。仔细理解返回的字段：\n- `status: \"ok\"`: 文本提取成功。\n- `status: \"no_text\"`: 文档无数字文本层且未开启 OCR 或 OCR 未识别出文本。\n- `status: \"failed\"`: 下载失败、链接失效或非有效 PDF。\n- `subStatus: \"budget_incomplete\"`: 文件极长或运行预算达到上限，文本仅提取至 `pagesExtracted` 页面。\n- `pages`: 包含 `pageNumber` 与对应文本的数组。回答问题时务必注明具体页码引用。"
+    }
+}

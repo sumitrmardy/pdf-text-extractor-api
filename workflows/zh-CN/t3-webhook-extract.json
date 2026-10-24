@@ -1,0 +1,129 @@
+{
+  "name": "PDF 转文本 Webhook 接口 (供应用与自动化集成)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# PDF 转文本 Webhook 接口\n\n向此 Webhook POST `{ \"url\": \"https://example.com/doc.pdf\" }`，实时获取清洗后的文本、元数据与 OCR 指标。\n\n## 配置（仅需一次）\n\n**1. 获取 Apify Token** — https://console.apify.com/settings/integrations\n\n**2. 创建 n8n 凭据**\n凭据 → 新建 → **Header Auth**\n- 名称: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer 你的_APIFY_TOKEN`\n\n所有 HTTP 节点均已配置指向该凭据，工作流文件中不包含任何密钥。\n\n## 计费说明\n\n按事件付费：成功返回文本的 PDF 每份 $0.002（千份起价 $2.00）。损坏文件、404 与空文件免费。扫描件 OCR 页面每页 $0.005。\n\n当前价格详情：https://apify.com/sumitr_mardy/pdf-text-extractor/pricing\n\nActor 页面：https://apify.com/sumitr_mardy/pdf-text-extractor\n模板与开源仓库：https://github.com/sumitrmardy/pdf-text-extractor-api",
+        "height": 520,
+        "width": 380,
+        "color": 4
+      },
+      "id": "t3-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pdf-extract",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "t3-webhook",
+      "name": "PDF 接收 Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        320,
+        100
+      ],
+      "webhookId": "pdf-extract"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ urls: [ ($json.body && $json.body.url) || $json.url || '' ], ocrMode: ($json.body && $json.body.ocrMode) || $json.ocrMode || 'auto' }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "t3-extract",
+      "name": "提取 PDF 文本 (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    url: item.url || '',\n    status: item.status || 'unknown',\n    subStatus: item.subStatus || '',\n    pageCount: item.pageCount || 0,\n    pagesExtracted: item.pagesExtracted || 0,\n    ocrPages: item.ocrPages || 0,\n    charCount: item.charCount || 0,\n    title: item.title || '',\n    text: item.text || '',\n    error: item.error || ''\n  }\n}];"
+      },
+      "id": "t3-format",
+      "name": "格式化响应 JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "t3-respond",
+      "name": "返回提取结果",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "PDF 接收 Webhook": {
+      "main": [
+        [
+          {
+            "node": "提取 PDF 文本 (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取 PDF 文本 (Apify)": {
+      "main": [
+        [
+          {
+            "node": "格式化响应 JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "格式化响应 JSON": {
+      "main": [
+        [
+          {
+            "node": "返回提取结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

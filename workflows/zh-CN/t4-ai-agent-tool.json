@@ -1,0 +1,137 @@
+{
+  "name": "AI Agent 工具：阅读与检索 PDF 文档",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# 为 AI Agent 赋予阅读 PDF 的能力\n\n为 AI Agent 配置 PDF 阅读工具，能够总结论文、根据精确页码回答提问并智能识别扫描件。\n\n## 配置（仅需一次）\n\n**1. 获取 Apify Token** — https://console.apify.com/settings/integrations\n\n**2. 创建 n8n 凭据**\n凭据 → 新建 → **Header Auth**\n- 名称: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer 你的_APIFY_TOKEN`\n\n所有 HTTP 节点均已配置指向该凭据，工作流文件中不包含任何密钥。\n\n## 提示词指引\n提示词详细说明了 `status`、`ocrPages` 与 `budget_incomplete` 的含义，确保 Agent 准确理解文档提取状态。\n\n## 计费说明\n\n按事件付费：成功返回文本的 PDF 每份 $0.002（千份起价 $2.00）。损坏文件、404 与空文件免费。扫描件 OCR 页面每页 $0.005。\n\n当前价格详情：https://apify.com/sumitr_mardy/pdf-text-extractor/pricing\n\nActor 页面：https://apify.com/sumitr_mardy/pdf-text-extractor\n模板与开源仓库：https://github.com/sumitrmardy/pdf-text-extractor-api",
+        "height": 800,
+        "width": 420,
+        "color": 4
+      },
+      "id": "t4-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "t4-chat",
+      "name": "接收聊天消息时",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        340,
+        60
+      ],
+      "webhookId": "pdf-assistant-agent"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "你是一个能够检索并阅读 PDF 文件的研究助手。当用户提供 PDF 链接时，调用 PDF 阅读工具获取其内容。仔细理解返回的字段：\n- `status: \"ok\"`: 文本提取成功。\n- `status: \"no_text\"`: 文档无数字文本层且未开启 OCR 或 OCR 未识别出文本。\n- `status: \"failed\"`: 下载失败、链接失效或非有效 PDF。\n- `subStatus: \"budget_incomplete\"`: 文件极长或运行预算达到上限，文本仅提取至 `pagesExtracted` 页面。\n- `pages`: 包含 `pageNumber` 与对应文本的数组。回答问题时务必注明具体页码引用。"
+        }
+      },
+      "id": "t4-agent",
+      "name": "PDF 智能问答 Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        600,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "t4-model",
+      "name": "对话模型",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "从一个或多个 PDF URL 中提取全文、元数据、按页拆分和 OCR 结果。必须在 `urls` 数组中传递 URL。",
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"urls\": {urls}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "urls",
+              "description": "A JSON array of PDF URLs to extract, for example [\"https://example.com/doc.pdf\"].",
+              "type": "json"
+            }
+          ]
+        },
+        "optimizeResponse": false
+      },
+      "id": "t4-tool",
+      "name": "PDF 阅读工具",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        760,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "接收聊天消息时": {
+      "main": [
+        [
+          {
+            "node": "PDF 智能问答 Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "对话模型": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "PDF 智能问答 Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF 阅读工具": {
+      "ai_tool": [
+        [
+          {
+            "node": "PDF 智能问答 Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

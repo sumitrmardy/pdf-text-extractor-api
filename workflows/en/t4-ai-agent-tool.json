@@ -1,0 +1,137 @@
+{
+  "name": "AI Agent tool: read and search PDF documents",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Give an AI Agent the ability to read PDFs\n\nAn AI Agent equipped with a tool to read any PDF URL. It can summarize papers, answer questions with exact page numbers, and handle scanned documents.\n\n## Setup (once)\n\n**1. Get an Apify token** — https://console.apify.com/settings/integrations\n\n**2. Create the n8n credential**\nCredentials → New → **Header Auth**\n- Name: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer YOUR_APIFY_TOKEN`\n\nEvery HTTP node here points at that credential by name. No token is stored in this file.\n\n## System prompt guidance\nExplains `status`, `ocrPages`, and `budget_incomplete` so the agent understands whether text was truncated or recovered by OCR.\n\n## Cost\n\nPay-per-event: $0.002 per PDF that returns text (from $2.00 per 1,000). Broken links, 404s, and empty PDFs are free. OCR for scanned pages is $0.005 per page.\n\nCurrent pricing: https://apify.com/sumitr_mardy/pdf-text-extractor/pricing\n\nActor: https://apify.com/sumitr_mardy/pdf-text-extractor\nTemplates & docs: https://github.com/sumitrmardy/pdf-text-extractor-api",
+        "height": 800,
+        "width": 420,
+        "color": 4
+      },
+      "id": "t4-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "t4-chat",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        340,
+        60
+      ],
+      "webhookId": "pdf-assistant-agent"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a research assistant with access to a PDF reading tool. When given a PDF link, use the Read PDF Tool to retrieve its content. Interpret the output fields carefully:\n- `status: \"ok\"`: Text extraction succeeded.\n- `status: \"no_text\"`: The PDF has no digital text layer and OCR is either off or found nothing.\n- `status: \"failed\"`: Download failed, invalid link, or non-PDF file.\n- `subStatus: \"budget_incomplete\"`: The document was exceptionally long or compute budget was exhausted; text is partial up to `pagesExtracted`.\n- `pages`: An array of page objects with `pageNumber` and `text`. Always cite specific page numbers when answering questions."
+        }
+      },
+      "id": "t4-agent",
+      "name": "PDF Assistant Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        600,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "t4-model",
+      "name": "Chat model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Extracts full text, metadata, page breakdown, and OCR results from one or more PDF URLs. Always provide an array of URLs in `urls`.",
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"urls\": {urls}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "urls",
+              "description": "A JSON array of PDF URLs to extract, for example [\"https://example.com/doc.pdf\"].",
+              "type": "json"
+            }
+          ]
+        },
+        "optimizeResponse": false
+      },
+      "id": "t4-tool",
+      "name": "Read PDF Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        760,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "PDF Assistant Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "PDF Assistant Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read PDF Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "PDF Assistant Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

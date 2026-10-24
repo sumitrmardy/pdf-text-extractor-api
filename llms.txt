@@ -1,0 +1,32 @@
+# PDF Text Extractor API
+
+> Fast PDF text extraction, layout analysis, and intelligent OCR primitive on Apify.
+> Designed for programmatic pipelines, n8n workflows, and AI Agents.
+
+## Capabilities
+
+- Extracts digital text via PDFium (1-8 ms/page)
+- Runs OCR via Tesseract 5 only on scanned pages without text
+- Pay-per-event pricing: broken files, 404s, and empty PDFs are free ($0.002 per successful PDF)
+- Built-in RAG chunking with precise pageStart and pageEnd citation metadata
+- Accepts direct links, Google Drive share links, Dropbox, and arXiv abstract URLs
+
+## Endpoints
+
+- Synchronous Actor run: `POST https://api.apify.com/v2/acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items`
+- Actor Store: https://apify.com/sumitr_mardy/pdf-text-extractor
+- Pricing: https://apify.com/sumitr_mardy/pdf-text-extractor/pricing
+- Repository: https://github.com/sumitrmardy/pdf-text-extractor-api
+
+## Output Schema Summary
+
+- `url` (string): Input URL
+- `status` (string): `ok` | `no_text` | `failed`
+- `subStatus` (string): `text_layer` | `ocr_recovered` | `scanned_ocr_off` | `budget_incomplete` | `invalid_url` | `not_a_pdf`
+- `pageCount` (integer): Total pages in document
+- `pagesExtracted` (integer): Number of pages processed
+- `ocrPages` (integer): Scanned pages recovered with OCR
+- `charCount` (integer): Extracted characters
+- `text` (string): Full document text
+- `pages` (array): Array of page objects with `pageNumber` and `text`
+- `chunks` (array): Pre-chunked text with `pageStart` and `pageEnd` metadata when `chunkSize` is requested

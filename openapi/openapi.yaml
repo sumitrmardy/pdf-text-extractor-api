@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: PDF Text Extractor API
+  description: Extract text, structure, page breakdown, and OCR from PDF documents via Apify.
+  version: 1.0.0
+servers:
+  - url: https://api.apify.com/v2
+paths:
+  /acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items:
+    post:
+      summary: Extract text from PDFs synchronously
+      operationId: extractPdfText
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - urls
+              properties:
+                urls:
+                  type: array
+                  items:
+                    type: string
+                  description: PDF URLs to extract. Direct links, Drive/Dropbox shares, arXiv.
+                ocrMode:
+                  type: string
+                  enum: [auto, off]
+                  default: auto
+                ocrLanguage:
+                  type: string
+                  default: eng
+                chunkSize:
+                  type: integer
+                  description: Optional chunk size for RAG.
+      responses:
+        '200':
+          description: Array of extracted PDF dataset items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer

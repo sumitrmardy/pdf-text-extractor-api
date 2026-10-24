@@ -1,0 +1,42 @@
+{
+  "inputIndex": 3,
+  "url": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/main/tests/resources/skew.pdf",
+  "resolvedUrl": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/main/tests/resources/skew.pdf",
+  "fileName": "skew.pdf",
+  "status": "no_text",
+  "subStatus": "scanned_ocr_off",
+  "error": "No text found in the selected pages; not charged",
+  "pageCount": 1,
+  "pagesExtracted": 1,
+  "ocrPages": 0,
+  "scannedPages": 1,
+  "charCount": 0,
+  "wordCount": 0,
+  "text": "",
+  "textTruncated": false,
+  "fullTextUrl": "",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "text": "",
+      "charCount": 0,
+      "ocr": false
+    }
+  ],
+  "chunks": [],
+  "title": "",
+  "author": "",
+  "subject": "",
+  "keywords": "",
+  "creator": "",
+  "producer": "libtiff / tiff2pdf - 20150912",
+  "creationDate": "2016-01-19T12:38:47Z",
+  "modDate": "2016-11-07T12:26:06-08:00",
+  "pdfVersion": 17,
+  "isEncrypted": false,
+  "fileSizeBytes": 76013,
+  "notes": [
+    "1 scanned page(s) skipped: OCR is off"
+  ],
+  "processingMs": 755
+}

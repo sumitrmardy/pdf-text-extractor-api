@@ -1,0 +1,80 @@
+{
+  "inputIndex": 4,
+  "url": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/main/tests/resources/multipage.pdf",
+  "resolvedUrl": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/main/tests/resources/multipage.pdf",
+  "fileName": "multipage.pdf",
+  "status": "ok",
+  "subStatus": "text_layer",
+  "error": "",
+  "pageCount": 6,
+  "pagesExtracted": 6,
+  "ocrPages": 0,
+  "scannedPages": 5,
+  "charCount": 99,
+  "wordCount": 21,
+  "text": "sw | \\\n\n+\n400 +\n300 —esupport\nBH No vote{note 1]\n200 4 t= Oppose\n\nSeNet{note 2]\nPercentage [note 3]",
+  "textTruncated": false,
+  "fullTextUrl": "",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "text": "",
+      "charCount": 0,
+      "ocr": false
+    },
+    {
+      "pageNumber": 2,
+      "text": "",
+      "charCount": 0,
+      "ocr": false
+    },
+    {
+      "pageNumber": 3,
+      "text": "",
+      "charCount": 0,
+      "ocr": false
+    },
+    {
+      "pageNumber": 4,
+      "text": "sw | \\\n\n+\n400 +\n300 —esupport\nBH No vote{note 1]\n200 4 t= Oppose\n\nSeNet{note 2]\nPercentage [note 3]",
+      "charCount": 99,
+      "ocr": false
+    },
+    {
+      "pageNumber": 5,
+      "text": "",
+      "charCount": 0,
+      "ocr": false
+    },
+    {
+      "pageNumber": 6,
+      "text": "",
+      "charCount": 0,
+      "ocr": false
+    }
+  ],
+  "chunks": [
+    {
+      "index": 0,
+      "text": "sw | \\\n+\n400 +\n300 —esupport\nBH No vote{note 1]\n200 4 t= Oppose\nSeNet{note 2]\nPercentage [note 3]",
+      "pageStart": 4,
+      "pageEnd": 4,
+      "charCount": 97
+    }
+  ],
+  "title": "",
+  "author": "",
+  "subject": "",
+  "keywords": "",
+  "creator": "pdftk 2.02 - www.pdftk.com",
+  "producer": "Mac OS X 10.10.4 Quartz PDFContext",
+  "creationDate": "2015-07-28T09:33:02Z",
+  "modDate": "2022-08-10T01:59:36-07:00",
+  "pdfVersion": 17,
+  "isEncrypted": false,
+  "fileSizeBytes": 1120291,
+  "notes": [
+    "5 scanned page(s) skipped: OCR is off"
+  ],
+  "processingMs": 1818
+}

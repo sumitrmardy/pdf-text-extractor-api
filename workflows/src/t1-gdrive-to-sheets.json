@@ -1,0 +1,136 @@
+{
+  "name": "__i18n.t1.name__",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "__i18n.t1.sticky__",
+        "height": 520,
+        "width": 380,
+        "color": 4
+      },
+      "id": "t1-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-120, -60]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "triggerOn": "folder",
+        "folder": {
+          "__rl": true,
+          "value": "YOUR_FOLDER_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "fileType": "application/pdf"
+        }
+      },
+      "id": "t1-drive",
+      "name": "__i18n.t1.driveName__",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [320, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/__link.actorId__/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ urls: [ $json.webViewLink || $json.webContentLink ] }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "t1-extract",
+      "name": "__i18n.t1.extractName__",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: {\n    file_id: item.json.url || '',\n    file_name: item.json.fileName || '',\n    status: item.json.status || '',\n    pages: item.json.pageCount || 0,\n    characters: item.json.charCount || 0,\n    text: (item.json.text || '').slice(0, 10000),\n    processed_at: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "t1-format",
+      "name": "__i18n.t1.formatName__",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 100]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        }
+      },
+      "id": "t1-sheet",
+      "name": "__i18n.t1.sheetName__",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1040, 100]
+    }
+  ],
+  "connections": {
+    "__i18n.t1.driveName__": {
+      "main": [
+        [
+          {
+            "node": "__i18n.t1.extractName__",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "__i18n.t1.extractName__": {
+      "main": [
+        [
+          {
+            "node": "__i18n.t1.formatName__",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "__i18n.t1.formatName__": {
+      "main": [
+        [
+          {
+            "node": "__i18n.t1.sheetName__",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

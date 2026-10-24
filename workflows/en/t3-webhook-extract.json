@@ -1,0 +1,129 @@
+{
+  "name": "PDF to Text Webhook API for apps and automations",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# PDF-to-Text Webhook\n\nPOST `{ \"url\": \"https://example.com/doc.pdf\" }` to this endpoint. It returns clean text, metadata, and OCR metrics in real time.\n\n## Setup (once)\n\n**1. Get an Apify token** — https://console.apify.com/settings/integrations\n\n**2. Create the n8n credential**\nCredentials → New → **Header Auth**\n- Name: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer YOUR_APIFY_TOKEN`\n\nEvery HTTP node here points at that credential by name. No token is stored in this file.\n\n## Cost\n\nPay-per-event: $0.002 per PDF that returns text (from $2.00 per 1,000). Broken links, 404s, and empty PDFs are free. OCR for scanned pages is $0.005 per page.\n\nCurrent pricing: https://apify.com/sumitr_mardy/pdf-text-extractor/pricing\n\nActor: https://apify.com/sumitr_mardy/pdf-text-extractor\nTemplates & docs: https://github.com/sumitrmardy/pdf-text-extractor-api",
+        "height": 520,
+        "width": 380,
+        "color": 4
+      },
+      "id": "t3-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pdf-extract",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "t3-webhook",
+      "name": "PDF Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        320,
+        100
+      ],
+      "webhookId": "pdf-extract"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ urls: [ ($json.body && $json.body.url) || $json.url || '' ], ocrMode: ($json.body && $json.body.ocrMode) || $json.ocrMode || 'auto' }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "t3-extract",
+      "name": "Extract PDF text (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    url: item.url || '',\n    status: item.status || 'unknown',\n    subStatus: item.subStatus || '',\n    pageCount: item.pageCount || 0,\n    pagesExtracted: item.pagesExtracted || 0,\n    ocrPages: item.ocrPages || 0,\n    charCount: item.charCount || 0,\n    title: item.title || '',\n    text: item.text || '',\n    error: item.error || ''\n  }\n}];"
+      },
+      "id": "t3-format",
+      "name": "Format JSON response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "t3-respond",
+      "name": "Return extraction result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "PDF Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF text (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF text (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Format JSON response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format JSON response": {
+      "main": [
+        [
+          {
+            "node": "Return extraction result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

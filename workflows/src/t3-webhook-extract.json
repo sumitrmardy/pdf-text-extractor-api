@@ -1,0 +1,114 @@
+{
+  "name": "__i18n.t3.name__",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "__i18n.t3.sticky__",
+        "height": 520,
+        "width": 380,
+        "color": 4
+      },
+      "id": "t3-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-120, -60]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pdf-extract",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "t3-webhook",
+      "name": "__i18n.t3.webhookName__",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [320, 100],
+      "webhookId": "pdf-extract"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/__link.actorId__/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ urls: [ ($json.body && $json.body.url) || $json.url || '' ], ocrMode: ($json.body && $json.body.ocrMode) || $json.ocrMode || 'auto' }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "t3-extract",
+      "name": "__i18n.t3.extractName__",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    url: item.url || '',\n    status: item.status || 'unknown',\n    subStatus: item.subStatus || '',\n    pageCount: item.pageCount || 0,\n    pagesExtracted: item.pagesExtracted || 0,\n    ocrPages: item.ocrPages || 0,\n    charCount: item.charCount || 0,\n    title: item.title || '',\n    text: item.text || '',\n    error: item.error || ''\n  }\n}];"
+      },
+      "id": "t3-format",
+      "name": "__i18n.t3.formatName__",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 100]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "t3-respond",
+      "name": "__i18n.t3.respondName__",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1040, 100]
+    }
+  ],
+  "connections": {
+    "__i18n.t3.webhookName__": {
+      "main": [
+        [
+          {
+            "node": "__i18n.t3.extractName__",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "__i18n.t3.extractName__": {
+      "main": [
+        [
+          {
+            "node": "__i18n.t3.formatName__",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "__i18n.t3.formatName__": {
+      "main": [
+        [
+          {
+            "node": "__i18n.t3.respondName__",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

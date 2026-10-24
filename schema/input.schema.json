@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sumitrmardy/pdf-text-extractor-api/schema/input.schema.json",
+  "title": "PDF Text Extractor — input body",
+  "type": "object",
+  "properties": {
+    "urls": {
+      "title": "PDF URLs",
+      "type": "array",
+      "editor": "stringList",
+      "description": "Links to PDF files, one per line. Direct links, Google Drive, Dropbox and OneDrive share links, and arXiv /abs/ pages are all accepted. Every URL gets exactly one output row, including the ones that fail.",
+      "prefill": [
+        "https://arxiv.org/pdf/1706.03762",
+        "https://www.irs.gov/pub/irs-pdf/f1040.pdf",
+        "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/main/tests/resources/skew.pdf"
+      ]
+    },
+    "ocrMode": {
+      "title": "OCR for scanned pages",
+      "type": "string",
+      "editor": "select",
+      "enum": [
+        "auto",
+        "off"
+      ],
+      "enumTitles": [
+        "Auto: OCR only pages that have no text layer",
+        "Off: never OCR"
+      ],
+      "default": "auto",
+      "description": "Auto runs OCR only on pages with no text layer that contain an image (scans, photos of documents). Pages that already have text are never OCRed. Only pages where OCR actually recovers text are charged."
+    },
+    "ocrLanguage": {
+      "title": "OCR language",
+      "type": "string",
+      "editor": "textfield",
+      "default": "eng",
+      "description": "Tesseract language code; join up to 3 with + (for example eng+fra). Available: eng, fra, deu, spa, por, ita, nld, pol, ces, ron, hun, swe, dan, nor, fin, tur, rus, ukr, ell, vie, ind, msa, tha, chi_sim, chi_tra, jpn, kor, ara, heb, hin.",
+      "pattern": "^[a-z_]+(\\+[a-z_]+){0,2}$"
+    },
+    "maxOcrPagesPerPdf": {
+      "title": "Max OCR pages per PDF",
+      "type": "integer",
+      "default": 50,
+      "minimum": 0,
+      "maximum": 2000,
+      "description": "Upper bound on pages OCRed in one PDF, to keep the cost of a huge scanned book predictable. Scanned pages beyond it are returned without text and reported in notes."
+    },
+    "pageRange": {
+      "title": "Page range",
+      "type": "string",
+      "editor": "textfield",
+      "default": "",
+      "description": "Extract only these pages, for example 1-5, 8, 12- (12- means page 12 to the end). Empty extracts every page."
+    },
+    "includePages": {
+      "title": "Include per-page text",
+      "type": "boolean",
+      "default": false,
+      "description": "Add a pages array with each page number, its text, and whether the text came from OCR. Useful for page-level citations."
+    },
+    "chunkSize": {
+      "title": "RAG chunk size (characters)",
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 20000,
+      "description": "Split the text into chunks of about this many characters, each carrying the pages it spans. 0 turns chunking off."
+    },
+    "chunkOverlap": {
+      "title": "RAG chunk overlap (characters)",
+      "type": "integer",
+      "default": 200,
+      "minimum": 0,
+      "maximum": 5000,
+      "description": "Characters of the previous chunk repeated at the start of the next one, so a sentence cut at a boundary still appears whole once."
+    },
+    "password": {
+      "title": "PDF password",
+      "type": "string",
+      "editor": "textfield",
+      "isSecret": true,
+      "description": "Password for protected PDFs. Applied to every PDF in the run that needs one."
+    },
+    "maxFileSizeMb": {
+      "title": "Max file size (MB)",
+      "type": "integer",
+      "default": 100,
+      "minimum": 1,
+      "maximum": 200,
+      "description": "Larger files are skipped and reported as failed (too_large), not charged."
+    },
+    "downloadTimeoutSecs": {
+      "title": "Download timeout (seconds)",
+      "type": "integer",
+      "default": 30,
+      "minimum": 5,
+      "maximum": 120,
+      "description": "Total time allowed to download one PDF, from connecting to the last byte. A URL that is too slow fails as download_timeout and is not charged. Raise it for very large files on slow hosts."
+    },
+    "maxConcurrency": {
+      "title": "PDFs in parallel",
+      "type": "integer",
+      "default": 4,
+      "minimum": 1,
+      "maximum": 32,
+      "description": "How many PDFs are downloaded and processed at once. Lowered automatically when large files would not fit in memory."
+    },
+    "proxyConfiguration": {
+      "title": "Proxy",
+      "type": "object",
+      "editor": "proxy",
+      "default": {
+        "useApifyProxy": false
+      },
+      "description": "Downloads go direct by default. If a host answers 401/403/407/429, the download is retried once through the Apify datacenter proxy automatically. Turn this on to always download through a datacenter proxy, or give your own proxy URLs. Residential proxy is not supported."
+    }
+  },
+  "required": [
+    "urls"
+  ]
+}

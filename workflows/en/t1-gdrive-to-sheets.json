@@ -1,0 +1,151 @@
+{
+  "name": "Extract text from Google Drive PDFs to Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Extract Google Drive PDFs to Sheets\n\nMonitors a Google Drive folder for new PDFs, sends them to the Apify PDF Text Extractor, and appends extracted text and metadata to Google Sheets.\n\n## Columns in your sheet\n`file_id` · `file_name` · `status` · `pages` · `characters` · `text` · `processed_at`\n\n## Setup (once)\n\n**1. Get an Apify token** — https://console.apify.com/settings/integrations\n\n**2. Create the n8n credential**\nCredentials → New → **Header Auth**\n- Name: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer YOUR_APIFY_TOKEN`\n\nEvery HTTP node here points at that credential by name. No token is stored in this file.\n\n## Cost\n\nPay-per-event: $0.002 per PDF that returns text (from $2.00 per 1,000). Broken links, 404s, and empty PDFs are free. OCR for scanned pages is $0.005 per page.\n\nCurrent pricing: https://apify.com/sumitr_mardy/pdf-text-extractor/pricing\n\nActor: https://apify.com/sumitr_mardy/pdf-text-extractor\nTemplates & docs: https://github.com/sumitrmardy/pdf-text-extractor-api\n\n## Sharing (required)\nThe Actor downloads each file from its link, so the PDFs must be shared as **Anyone with the link can view**. A private file comes back as a failed row (`not_a_pdf` or `http_403`) and is not charged.",
+        "height": 520,
+        "width": 380,
+        "color": 4
+      },
+      "id": "t1-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "triggerOn": "folder",
+        "folder": {
+          "__rl": true,
+          "value": "YOUR_FOLDER_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "fileType": "application/pdf"
+        }
+      },
+      "id": "t1-drive",
+      "name": "Read Drive PDF files",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ urls: [ $json.webViewLink || $json.webContentLink ] }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "t1-extract",
+      "name": "Extract PDF text (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: {\n    file_id: item.json.url || '',\n    file_name: item.json.fileName || '',\n    status: item.json.status || '',\n    pages: item.json.pageCount || 0,\n    characters: item.json.charCount || 0,\n    text: (item.json.text || '').slice(0, 10000),\n    processed_at: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "t1-format",
+      "name": "Format row data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        }
+      },
+      "id": "t1-sheet",
+      "name": "Append to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Read Drive PDF files": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF text (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF text (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Format row data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format row data": {
+      "main": [
+        [
+          {
+            "node": "Append to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

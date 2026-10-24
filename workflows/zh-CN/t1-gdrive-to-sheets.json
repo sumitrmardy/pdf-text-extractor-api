@@ -1,0 +1,151 @@
+{
+  "name": "从 Google Drive PDF 提取文本并写入 Google 表格 (PDF Text Extractor)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# 提取 Google Drive 中的 PDF 到表格\n\n监控 Google Drive 文件夹中的新 PDF，调用 Apify PDF Text Extractor 提取文字并追加到 Google 表格。\n\n## 表格所需列\n`file_id` · `file_name` · `status` · `pages` · `characters` · `text` · `processed_at`\n\n## 配置（仅需一次）\n\n**1. 获取 Apify Token** — https://console.apify.com/settings/integrations\n\n**2. 创建 n8n 凭据**\n凭据 → 新建 → **Header Auth**\n- 名称: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer 你的_APIFY_TOKEN`\n\n所有 HTTP 节点均已配置指向该凭据，工作流文件中不包含任何密钥。\n\n## 计费说明\n\n按事件付费：成功返回文本的 PDF 每份 $0.002（千份起价 $2.00）。损坏文件、404 与空文件免费。扫描件 OCR 页面每页 $0.005。\n\n当前价格详情：https://apify.com/sumitr_mardy/pdf-text-extractor/pricing\n\nActor 页面：https://apify.com/sumitr_mardy/pdf-text-extractor\n模板与开源仓库：https://github.com/sumitrmardy/pdf-text-extractor-api\n\n## 共享设置（必需）\nActor 通过链接下载每个文件，因此 PDF 必须设置为**知道链接的任何人均可查看**。私有文件会返回失败行（`not_a_pdf` 或 `http_403`），不收费。",
+        "height": 520,
+        "width": 380,
+        "color": 4
+      },
+      "id": "t1-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "triggerOn": "folder",
+        "folder": {
+          "__rl": true,
+          "value": "YOUR_FOLDER_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "fileType": "application/pdf"
+        }
+      },
+      "id": "t1-drive",
+      "name": "读取 Drive 中的 PDF 文件",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ urls: [ $json.webViewLink || $json.webContentLink ] }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "t1-extract",
+      "name": "提取 PDF 文本 (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: {\n    file_id: item.json.url || '',\n    file_name: item.json.fileName || '',\n    status: item.json.status || '',\n    pages: item.json.pageCount || 0,\n    characters: item.json.charCount || 0,\n    text: (item.json.text || '').slice(0, 10000),\n    processed_at: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "t1-format",
+      "name": "格式化表格行数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        }
+      },
+      "id": "t1-sheet",
+      "name": "追加至 Google 表格",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "读取 Drive 中的 PDF 文件": {
+      "main": [
+        [
+          {
+            "node": "提取 PDF 文本 (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取 PDF 文本 (Apify)": {
+      "main": [
+        [
+          {
+            "node": "格式化表格行数据",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "格式化表格行数据": {
+      "main": [
+        [
+          {
+            "node": "追加至 Google 表格",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

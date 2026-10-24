@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sumitrmardy/pdf-text-extractor-api/schema/output.schema.json",
+  "title": "PDF Text Extractor — output record",
+  "type": "object",
+  "required": [
+    "inputIndex",
+    "url",
+    "resolvedUrl",
+    "fileName",
+    "status",
+    "subStatus",
+    "error",
+    "pageCount",
+    "pagesExtracted",
+    "ocrPages",
+    "scannedPages",
+    "charCount",
+    "wordCount",
+    "text",
+    "textTruncated",
+    "fullTextUrl",
+    "pages",
+    "chunks",
+    "title",
+    "author",
+    "subject",
+    "keywords",
+    "creator",
+    "producer",
+    "creationDate",
+    "modDate",
+    "pdfVersion",
+    "isEncrypted",
+    "fileSizeBytes",
+    "notes",
+    "processingMs"
+  ],
+  "properties": {
+    "inputIndex": {
+      "type": "integer",
+      "description": "Position of this URL in the input urls array, starting at 0. Rows arrive in completion order; use this to line them up with the input.",
+      "example": 0
+    },
+    "url": {
+      "type": "string",
+      "description": "The URL exactly as given in the input.",
+      "example": "https://arxiv.org/abs/1706.03762"
+    },
+    "resolvedUrl": {
+      "type": "string",
+      "description": "The direct download URL actually fetched (share links and arXiv /abs/ pages resolved). Empty if the URL was rejected before download.",
+      "example": "https://arxiv.org/pdf/1706.03762.pdf"
+    },
+    "fileName": {
+      "type": "string",
+      "description": "File name from the resolved URL path.",
+      "example": "1706.03762.pdf"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "no_text",
+        "failed"
+      ],
+      "description": "ok = text returned (charged). no_text = valid PDF with no readable text (free). failed = could not download or open (free).",
+      "example": "ok"
+    },
+    "subStatus": {
+      "type": "string",
+      "description": "Machine-readable reason. ok: text_layer, ocr, ocr_incomplete, budget_incomplete (a very long PDF stopped early; see notes). no_text: no_text_layer, scanned_ocr_off, ocr_found_nothing. failed: http_<code>, not_a_pdf, too_large, download_timeout, download_error, password_required, wrong_password, unsupported_encryption, corrupt_pdf, empty_document, bad_page_range, page_range_out_of_bounds, invalid_url, cost_limit_reached, free_work_limit, extraction_error.",
+      "example": "text_layer"
+    },
+    "error": {
+      "type": "string",
+      "description": "Human-readable explanation when status is not ok; empty string otherwise.",
+      "example": ""
+    },
+    "pageCount": {
+      "type": "integer",
+      "description": "Total pages in the PDF.",
+      "example": 15
+    },
+    "pagesExtracted": {
+      "type": "integer",
+      "description": "Pages read (all pages, or those selected by pageRange).",
+      "example": 15
+    },
+    "ocrPages": {
+      "type": "integer",
+      "description": "Pages whose text came from OCR. Each is one ocr-page charge.",
+      "example": 0
+    },
+    "scannedPages": {
+      "type": "integer",
+      "description": "Pages with no text layer that contain an image, i.e. OCR candidates.",
+      "example": 0
+    },
+    "charCount": {
+      "type": "integer",
+      "description": "Characters in text.",
+      "example": 39598
+    },
+    "wordCount": {
+      "type": "integer",
+      "description": "Whitespace-separated words in text.",
+      "example": 6099
+    },
+    "text": {
+      "type": "string",
+      "description": "Full extracted text. Line breaks kept; pages joined by a blank line.",
+      "example": "Attention Is All You Need\n..."
+    },
+    "textTruncated": {
+      "type": "boolean",
+      "description": "True when the row was too big for a dataset item: text holds the first 1,000,000 characters and the full text is at fullTextUrl.",
+      "example": false
+    },
+    "fullTextUrl": {
+      "type": "string",
+      "description": "Link to the full text in the run key-value store when textTruncated is true; empty otherwise.",
+      "example": ""
+    },
+    "pages": {
+      "type": "array",
+      "description": "Per-page text when includePages is on: {pageNumber, text, charCount, ocr}. Empty array otherwise.",
+      "items": {
+        "type": "object"
+      },
+      "example": []
+    },
+    "chunks": {
+      "type": "array",
+      "description": "RAG chunks when chunkSize > 0: {index, text, pageStart, pageEnd, charCount}. Empty array otherwise.",
+      "items": {
+        "type": "object"
+      },
+      "example": []
+    },
+    "title": {
+      "type": "string",
+      "description": "PDF metadata title; empty if absent.",
+      "example": ""
+    },
+    "author": {
+      "type": "string",
+      "description": "PDF metadata author; empty if absent.",
+      "example": ""
+    },
+    "subject": {
+      "type": "string",
+      "description": "PDF metadata subject; empty if absent.",
+      "example": ""
+    },
+    "keywords": {
+      "type": "string",
+      "description": "PDF metadata keywords; empty if absent.",
+      "example": ""
+    },
+    "creator": {
+      "type": "string",
+      "description": "Application that created the original document.",
+      "example": "LaTeX with hyperref"
+    },
+    "producer": {
+      "type": "string",
+      "description": "Application that produced the PDF.",
+      "example": "pdfTeX-1.40.25"
+    },
+    "creationDate": {
+      "type": "string",
+      "description": "Creation date as ISO 8601 when parseable; empty if absent.",
+      "example": "2024-04-10T21:11:43Z"
+    },
+    "modDate": {
+      "type": "string",
+      "description": "Modification date as ISO 8601 when parseable; empty if absent.",
+      "example": "2024-04-10T21:11:43Z"
+    },
+    "pdfVersion": {
+      "type": "integer",
+      "description": "PDF version x10 (15 = PDF 1.5); 0 when unknown.",
+      "example": 15
+    },
+    "isEncrypted": {
+      "type": "boolean",
+      "description": "True if the PDF uses encryption (including owner-password restrictions that open without a password).",
+      "example": false
+    },
+    "fileSizeBytes": {
+      "type": "integer",
+      "description": "Downloaded size in bytes.",
+      "example": 2215244
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Warnings that do not fail the row, e.g. scanned pages skipped by the OCR cap.",
+      "example": []
+    },
+    "processingMs": {
+      "type": "integer",
+      "description": "Time spent downloading and extracting this PDF, excluding queueing.",
+      "example": 218
+    }
+  },
+  "additionalProperties": false
+}

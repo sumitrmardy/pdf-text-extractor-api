@@ -1,0 +1,238 @@
+{
+  "name": "PDF 文档向量化入库 (带 RAG 切片与页码元数据)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# PDF 向量入库工作流\n\n提取 PDF 并进行语义分块，保留精确的 `pageStart` 与 `pageEnd` 元数据，写入 Qdrant/Pinecone 向量数据库供 RAG 引用。\n\n## 配置（仅需一次）\n\n**1. 获取 Apify Token** — https://console.apify.com/settings/integrations\n\n**2. 创建 n8n 凭据**\n凭据 → 新建 → **Header Auth**\n- 名称: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer 你的_APIFY_TOKEN`\n\n所有 HTTP 节点均已配置指向该凭据，工作流文件中不包含任何密钥。\n\n## 原生切片支持\nActor 支持传入 `chunkSize` 原生切片，保留真实的 PDF 页码边界，便于精准生成引用溯源。\n\n## 计费说明\n\n按事件付费：成功返回文本的 PDF 每份 $0.002（千份起价 $2.00）。损坏文件、404 与空文件免费。扫描件 OCR 页面每页 $0.005。\n\n当前价格详情：https://apify.com/sumitr_mardy/pdf-text-extractor/pricing\n\nActor 页面：https://apify.com/sumitr_mardy/pdf-text-extractor\n模板与开源仓库：https://github.com/sumitrmardy/pdf-text-extractor-api",
+        "height": 520,
+        "width": 380,
+        "color": 4
+      },
+      "id": "t2-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        -60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "t2-trigger-manual",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "be533c9c-65a9-426f-a4d5-41e79384ba0a",
+              "name": "url",
+              "value": "https://arxiv.org/pdf/1706.03762",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "t2-trigger",
+      "name": "PDF URL 列表输入",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/sumitr_mardy~pdf-text-extractor/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ urls: [ $json.url ], chunkSize: 1000, chunkOverlap: 150 }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "t2-extract",
+      "name": "提取并分块 PDF (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apify-api",
+          "name": "Apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// One item per chunk. Page numbers travel as metadata so answers can cite the page.\nconst out = [];\nfor (const item of $input.all()) {\n  const pdf = item.json;\n  if (pdf.status !== 'ok') continue;   // failed / no_text rows carry the reason in subStatus\n  for (const c of pdf.chunks || []) {\n    out.push({ json: { text: c.text, source: pdf.url, fileName: pdf.fileName, pageStart: c.pageStart, pageEnd: c.pageEnd, chunkIndex: c.index } });\n  }\n}\nreturn out;"
+      },
+      "id": "t2-prepare",
+      "name": "整理切片文档",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "pdf_documents",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "t2-qdrant",
+      "name": "写入向量数据库",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1040,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "t2-embeddings",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "textSplittingMode": "simple",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source",
+                "value": "={{ $json.source }}"
+              },
+              {
+                "name": "fileName",
+                "value": "={{ $json.fileName }}"
+              },
+              {
+                "name": "pageStart",
+                "value": "={{ $json.pageStart }}"
+              },
+              {
+                "name": "pageEnd",
+                "value": "={{ $json.pageEnd }}"
+              },
+              {
+                "name": "chunkIndex",
+                "value": "={{ $json.chunkIndex }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "t2-loader",
+      "name": "Chunk to document",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1160,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "PDF URL 列表输入": {
+      "main": [
+        [
+          {
+            "node": "提取并分块 PDF (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取并分块 PDF (Apify)": {
+      "main": [
+        [
+          {
+            "node": "整理切片文档",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "整理切片文档": {
+      "main": [
+        [
+          {
+            "node": "写入向量数据库",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "PDF URL 列表输入",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "写入向量数据库",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk to document": {
+      "ai_document": [
+        [
+          {
+            "node": "写入向量数据库",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

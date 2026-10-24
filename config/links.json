@@ -1,0 +1,14 @@
+{
+    "_comment": "Single source for every outbound link and the price string. Nothing else in the repo may hardcode these — scripts/build-workflows.mjs injects them, and scripts/validate.mjs fails the build if a hardcoded Apify URL or price appears anywhere else.",
+    "actorUrl": "https://apify.com/sumitr_mardy/pdf-text-extractor",
+    "actorPricingUrl": "https://apify.com/sumitr_mardy/pdf-text-extractor/pricing",
+    "actorApiUrl": "https://apify.com/sumitr_mardy/pdf-text-extractor/api",
+    "actorId": "sumitr_mardy~pdf-text-extractor",
+    "_affiliate": "Empty on purpose — the owner has not registered for the Apify Affiliate Program yet. When they do, put the exact parameter their dashboard gives here and rebuild.",
+    "affiliateParam": "",
+    "repoUrl": "https://github.com/sumitrmardy/pdf-text-extractor-api",
+    "apifyConsoleUrl": "https://console.apify.com",
+    "apifyTokenUrl": "https://console.apify.com/settings/integrations",
+    "_price": "Pricing is pay-per-event: $0.002 per extracted PDF (from $2.00 per 1k), failed/empty PDFs free, plus $0.005 per recovered OCR page.",
+    "priceFromPer1k": "$2.00"
+}

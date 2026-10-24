@@ -1,0 +1,15 @@
+{
+  "_comment": ".cursor/mcp.json. Add this to your Cursor workspace settings. Restart Cursor after editing.",
+  "mcpServers": {
+    "pdf-text-extractor": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.apify.com?tools=sumitr_mardy/pdf-text-extractor",
+        "--header",
+        "Authorization: Bearer YOUR_APIFY_TOKEN"
+      ]
+    }
+  }
+}

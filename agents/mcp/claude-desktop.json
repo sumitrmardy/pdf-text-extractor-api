@@ -1,0 +1,18 @@
+{
+  "_comment": "claude_desktop_config.json. Pick ONE of the two entries below and delete the other. Restart Claude Desktop after editing.",
+  "mcpServers": {
+    "pdf-text-extractor": {
+      "url": "https://mcp.apify.com?tools=sumitr_mardy/pdf-text-extractor"
+    },
+    "pdf-text-extractor-with-token": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.apify.com?tools=sumitr_mardy/pdf-text-extractor",
+        "--header",
+        "Authorization: Bearer YOUR_APIFY_TOKEN"
+      ]
+    }
+  }
+}

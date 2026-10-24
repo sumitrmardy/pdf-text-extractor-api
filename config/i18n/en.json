@@ -1,0 +1,41 @@
+{
+    "common": {
+        "credentialNote": "## Setup (once)\n\n**1. Get an Apify token** — __link.apifyTokenUrl__\n\n**2. Create the n8n credential**\nCredentials → New → **Header Auth**\n- Name: `Apify API`\n- Header name: `Authorization`\n- Header value: `Bearer YOUR_APIFY_TOKEN`\n\nEvery HTTP node here points at that credential by name. No token is stored in this file.",
+        "costNote": "## Cost\n\nPay-per-event: $0.002 per PDF that returns text (from __link.priceFromPer1k__ per 1,000). Broken links, 404s, and empty PDFs are free. OCR for scanned pages is $0.005 per page.\n\nCurrent pricing: __link.actorPricingUrl__",
+        "actorNote": "Actor: __link.actorUrl__\nTemplates & docs: __link.repoUrl__"
+    },
+    "t1": {
+        "name": "Extract text from Google Drive PDFs to Google Sheets",
+        "sticky": "# Extract Google Drive PDFs to Sheets\n\nMonitors a Google Drive folder for new PDFs, sends them to the Apify PDF Text Extractor, and appends extracted text and metadata to Google Sheets.\n\n## Columns in your sheet\n`file_id` · `file_name` · `status` · `pages` · `characters` · `text` · `processed_at`\n\n__i18n.common.credentialNote__\n\n__i18n.common.costNote__\n\n__i18n.common.actorNote__\n\n## Sharing (required)\nThe Actor downloads each file from its link, so the PDFs must be shared as **Anyone with the link can view**. A private file comes back as a failed row (`not_a_pdf` or `http_403`) and is not charged.",
+        "driveName": "Read Drive PDF files",
+        "extractName": "Extract PDF text (Apify)",
+        "formatName": "Format row data",
+        "sheetName": "Append to Google Sheet"
+    },
+    "t2": {
+        "name": "Ingest PDFs to Vector Store with RAG chunking and page metadata",
+        "sticky": "# Ingest PDFs to Vector Store\n\nExtracts PDFs, splits them into semantic chunks with exact `pageStart` and `pageEnd` metadata, and stores them in Qdrant/Pinecone for RAG retrieval.\n\n__i18n.common.credentialNote__\n\n## Built-in chunking\nThe Actor chunks text natively when `chunkSize` is passed, preserving page citation boundaries so citations point to the real PDF page.\n\n__i18n.common.costNote__\n\n__i18n.common.actorNote__",
+        "triggerName": "PDF URLs input",
+        "extractName": "Extract and chunk PDF (Apify)",
+        "prepareChunksName": "Prepare document chunks",
+        "vectorStoreName": "Upsert to Vector Store"
+    },
+    "t3": {
+        "name": "PDF to Text Webhook API for apps and automations",
+        "sticky": "# PDF-to-Text Webhook\n\nPOST `{ \"url\": \"https://example.com/doc.pdf\" }` to this endpoint. It returns clean text, metadata, and OCR metrics in real time.\n\n__i18n.common.credentialNote__\n\n__i18n.common.costNote__\n\n__i18n.common.actorNote__",
+        "webhookName": "PDF Webhook",
+        "extractName": "Extract PDF text (Apify)",
+        "formatName": "Format JSON response",
+        "respondName": "Return extraction result"
+    },
+    "t4": {
+        "name": "AI Agent tool: read and search PDF documents",
+        "sticky": "# Give an AI Agent the ability to read PDFs\n\nAn AI Agent equipped with a tool to read any PDF URL. It can summarize papers, answer questions with exact page numbers, and handle scanned documents.\n\n__i18n.common.credentialNote__\n\n## System prompt guidance\nExplains `status`, `ocrPages`, and `budget_incomplete` so the agent understands whether text was truncated or recovered by OCR.\n\n__i18n.common.costNote__\n\n__i18n.common.actorNote__",
+        "chatTriggerName": "When chat message received",
+        "agentName": "PDF Assistant Agent",
+        "toolName": "Read PDF Tool",
+        "modelName": "Chat model",
+        "toolDescription": "Extracts full text, metadata, page breakdown, and OCR results from one or more PDF URLs. Always provide an array of URLs in `urls`.",
+        "systemPrompt": "You are a research assistant with access to a PDF reading tool. When given a PDF link, use the Read PDF Tool to retrieve its content. Interpret the output fields carefully:\n- `status: \"ok\"`: Text extraction succeeded.\n- `status: \"no_text\"`: The PDF has no digital text layer and OCR is either off or found nothing.\n- `status: \"failed\"`: Download failed, invalid link, or non-PDF file.\n- `subStatus: \"budget_incomplete\"`: The document was exceptionally long or compute budget was exhausted; text is partial up to `pagesExtracted`.\n- `pages`: An array of page objects with `pageNumber` and `text`. Always cite specific page numbers when answering questions."
+    }
+}
